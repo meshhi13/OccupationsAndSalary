@@ -4,8 +4,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 
-# Load the file
-df = pd.read_excel(DATA_DIR / "data_merged.xlsx")
+# Load the file while preserving literal text values like "None"
+df = pd.read_excel(DATA_DIR / "data_merged.xlsx", keep_default_na=False)
 
 # Clean OCC_CODE
 df["OCC_CODE"] = df["OCC_CODE"].astype(str).str.strip()
@@ -29,11 +29,8 @@ def map_group(code):
     else:
         return None
 
-# Add the new grouping column
-df["GROUP"] = df["OCC_CODE"].apply(map_group)
-
-# Optional: drop rows that do not fall into one of the 4 groups
-df = df[df["GROUP"].notna()].copy()
+# Add the new grouping column and preserve missing groups as the literal text "None"
+df["GROUP"] = df["OCC_CODE"].apply(map_group).fillna("None")
 
 # Save the output
 df.to_excel(DATA_DIR / "data_grouped.xlsx", index=False)

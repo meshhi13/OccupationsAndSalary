@@ -25,6 +25,16 @@ skills["OCC_CODE"] = skills["OCC_CODE"].astype(str).str.strip()
 skills = skills[skills["OCC_CODE"].str.fullmatch(r"\d{2}-\d{4}")].copy()
 skills = skills.drop_duplicates(subset="OCC_CODE")
 
+skills_cols = [
+    "OCC_CODE",
+    "Active Learning_LV",
+    "Active Listening_LV",
+    "Coordination_LV",
+    "Critical Thinking_LV",
+    "Judgment and Decision Making_LV",
+]
+skills = skills[[c for c in skills_cols if c in skills.columns]].copy()
+
 # =========================
 # 3. CLEAN SALARY
 # =========================
@@ -41,9 +51,9 @@ if "NAICS_TITLE" in salary.columns:
     salary = salary[salary["NAICS_TITLE"] == "Cross-industry"].copy()
 
 salary_cols = [
-    "OCC_CODE", "OCC_TITLE", "TOT_EMP", "H_MEAN", "A_MEAN",
-    "H_MEDIAN", "A_MEDIAN", "A_PCT10", "A_PCT25", "A_PCT75", "A_PCT90"
+    "OCC_CODE", "OCC_TITLE", "A_MEAN", "A_MEDIAN"
 ]
+
 salary = salary[[c for c in salary_cols if c in salary.columns]].copy()
 
 salary = salary.replace("#", pd.NA)
@@ -75,7 +85,7 @@ education = education.rename(columns={
 education["OCC_CODE"] = education["OCC_CODE"].astype(str).str.strip()
 
 education = education[
-    ["OCC_CODE", "EDU_TITLE", "ENTRY_EDUCATION", "RELATED_WORK_EXPERIENCE", "ON_THE_JOB_TRAINING"]
+    ["OCC_CODE", "ENTRY_EDUCATION", "RELATED_WORK_EXPERIENCE", "ON_THE_JOB_TRAINING"]
 ].copy()
 
 education = education.drop_duplicates(subset="OCC_CODE")
@@ -92,6 +102,16 @@ for col in qual_cols:
         education[col].notna() &
         (education[col] != "")
     ]
+
+# Keep only occupations requiring Associate's degree or higher.
+entry_education = education["ENTRY_EDUCATION"].str.lower()
+education = education[
+    entry_education.str.contains(
+        r"associate|bachelor|master|doctoral|professional",
+        regex=True,
+        na=False,
+    )
+].copy()
 # =========================
 # 5. MERGE
 # =========================
@@ -101,7 +121,7 @@ merged = merged.merge(education, on="OCC_CODE", how="inner")
 # =========================
 # 6. SAVE
 # =========================
-output_path = DATA_DIR / "merged_occupation_data.xlsx"
+output_path = DATA_DIR / "data_merged.xlsx"
 merged.to_excel(output_path, index=False)
 
 print("Done.")
